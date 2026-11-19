@@ -428,8 +428,10 @@ let SAFE_T = 0, HALF = 100;
 // iOS home-screen apps can report a viewport shorter than the screen: size the app to the real screen
 function fixHeight() {
   const standalone = navigator.standalone || (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches));
-  let h = window.innerHeight;
-  if (standalone && innerHeight > innerWidth && Math.abs(screen.width - innerWidth) < 2 && screen.height > h && screen.height - h < 140) h = screen.height;
+  const h = window.innerHeight;
+  // when iOS gives a home-screen app a window shorter than the screen, the home bar is already outside it: drop the bottom padding
+  const short = standalone && innerHeight > innerWidth && screen.height - h > 20;
+  $('app').style.paddingBottom = short ? '6px' : '';
   $('app').style.height = h + 'px'; $('skills').style.height = h + 'px';
   resize();
 }
