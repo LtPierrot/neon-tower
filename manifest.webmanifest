@@ -2,7 +2,7 @@
  "name": "Neon Tower",
  "short_name": "Neon Tower",
  "start_url": "./",
- "display": "fullscreen",
+ "display": "standalone",
  "orientation": "portrait",
  "background_color": "#07060f",
  "theme_color": "#07060f",
