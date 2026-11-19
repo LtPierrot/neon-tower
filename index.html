@@ -20,14 +20,15 @@ html,body{height:100%;background:#07060f;color:#fff;font-family:'Exo 2',system-u
 button{font-family:inherit;color:inherit;background:none;border:none;cursor:pointer}
 svg{display:block}
 #app{position:fixed;inset:0;display:flex;flex-direction:column;max-width:620px;margin:0 auto;
-  padding:env(safe-area-inset-top) env(safe-area-inset-right) env(safe-area-inset-bottom) env(safe-area-inset-left)}
+  padding:0 env(safe-area-inset-right) max(4px, calc(env(safe-area-inset-bottom) - 12px)) env(safe-area-inset-left);background:#17173a}
+#safeProbe{position:fixed;top:0;left:0;width:0;height:env(safe-area-inset-top);visibility:hidden;pointer-events:none}
 #stage{position:relative;flex:1;min-height:170px}
 #cv{position:absolute;inset:0;width:100%;height:100%;display:block}
 
 /* top HUD */
-#pauseBtn{position:absolute;left:8px;top:6px;width:38px;height:38px;border:2px solid #ffffffaa;border-radius:6px;background:#0d0d18cc;display:flex;align-items:center;justify-content:center;box-shadow:0 0 6px #fff3}
+#pauseBtn{position:absolute;left:8px;top:calc(env(safe-area-inset-top) + 4px);width:38px;height:38px;border:2px solid #ffffffaa;border-radius:6px;background:#0d0d18cc;display:flex;align-items:center;justify-content:center;box-shadow:0 0 6px #fff3}
 #pauseBtn svg{width:18px;height:18px}
-.hud-r{position:absolute;right:10px;top:4px;text-align:right;font-weight:700;pointer-events:none;text-shadow:0 0 8px #000}
+.hud-r{position:absolute;right:10px;top:calc(env(safe-area-inset-top) + 2px);text-align:right;font-weight:700;pointer-events:none;text-shadow:0 0 8px #000}
 .hud-r .cash{font-size:26px;line-height:1.15}
 .hud-r .gems{font-size:18px;display:flex;align-items:center;justify-content:flex-end;gap:6px;color:#f3c8ff}
 #spdBtn{position:absolute;right:8px;bottom:6px;min-width:58px;height:34px;padding:0 8px;border:2px solid #9f6;border-radius:5px;background:#0d0d18;font-weight:800;font-size:17px;box-shadow:0 0 8px #9f67}
@@ -114,7 +115,7 @@ svg{display:block}
 .sw.on{background:#3c6}.sw.on::after{left:27px}
 
 /* skills screen */
-#skills{position:fixed;inset:0;z-index:12;background:radial-gradient(circle at 50% 30%,#1b1840,#07060f 75%);display:flex;flex-direction:column;
+#skills{position:fixed;top:0;left:0;right:0;z-index:12;background:radial-gradient(circle at 50% 30%,#1b1840,#07060f 75%);display:flex;flex-direction:column;
   padding:calc(env(safe-area-inset-top) + 12px) calc(env(safe-area-inset-right) + 12px) calc(env(safe-area-inset-bottom) + 12px) calc(env(safe-area-inset-left) + 12px);max-width:620px;margin:0 auto}
 #skills.hidden{display:none}
 .skh{display:flex;justify-content:space-between;align-items:flex-start;gap:10px}
@@ -138,6 +139,7 @@ svg{display:block}
 </style>
 </head>
 <body>
+<div id="safeProbe"></div>
 <div id="app">
   <div id="stage">
     <canvas id="cv"></canvas>
@@ -418,10 +420,22 @@ function resize() {
   DPR = Math.min(window.devicePixelRatio || 1, 2.5);
   W = r.width; H = r.height;
   cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
-  CX = W / 2; CY = H / 2 + 10;
+  SAFE_T = $('safeProbe').getBoundingClientRect().height || 0;
+  const top = SAFE_T + 14, bot = 16;
+  CX = W / 2; CY = (top + H - bot) / 2; HALF = (H - top - bot) / 2;
 }
-window.addEventListener('resize', resize);
-const fitS = () => Math.min(W / 2 - 8, H / 2 - 22) / (V('range') * 1.08);
+let SAFE_T = 0, HALF = 100;
+// iOS home-screen apps can report a viewport shorter than the screen: size the app to the real screen
+function fixHeight() {
+  const standalone = navigator.standalone || (window.matchMedia && (matchMedia('(display-mode: standalone)').matches || matchMedia('(display-mode: fullscreen)').matches));
+  let h = window.innerHeight;
+  if (standalone && innerHeight > innerWidth && Math.abs(screen.width - innerWidth) < 2 && screen.height > h && screen.height - h < 140) h = screen.height;
+  $('app').style.height = h + 'px'; $('skills').style.height = h + 'px';
+  resize();
+}
+window.addEventListener('resize', fixHeight);
+window.addEventListener('orientationchange', () => setTimeout(fixHeight, 300));
+const fitS = () => Math.min(W / 2 - 8, HALF) / (V('range') * 1.08);
 
 /* ================= game logic ================= */
 const inRange = (e, R) => e.x * e.x + e.y * e.y <= R * R;
@@ -1258,7 +1272,7 @@ function frame(t) {
 document.addEventListener('visibilitychange', () => { if (document.hidden) save(); last = performance.now(); });
 window.addEventListener('pagehide', save);
 
-resize();
+fixHeight();
 S = fitS();
 buildSkillBar(); buildCards(); refreshHud();
 bossMusic = isBossWave(st.wave);
